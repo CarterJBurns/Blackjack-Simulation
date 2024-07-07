@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Results</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #72d686; /* Change this to your desired background color */
+        }
+        .content {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        .plot {
+        flex: 1;
+        margin-top: -0.23in; /* Move the graph up by 1/3 of an inch */
+        }
+
+        .details {
+            flex: 1;
+            margin-left: 20px;
+            font-size: 18px;
+        }
+        .details p {
+            margin: 5px 0;
+        }
+        .score-box {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .score-box p {
+        font-size: 30px; /* Adjust the font size as needed */
+        }
+    </style>
+</head>
+<body class="container">
+    <h1 class="my-4 text-center">BlackJack Simulation Game</h1>
+    <div class="score-box">
+        <p>Beat Score: 3000</p>
+    </div>
+
+    <form id="strategyForm" class="mb-4">
+        <div class="form-group">
+            <label for="strategy">Betting Strategy:</label>
+            <select id="strategy" name="strategy" class="form-control" required>
+                <option value="M">Martingale</option>
+                <option value="R">Reverse Martingale</option>
+                <option value="P">Paroli</option>
+                <option value="F">Flat</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    <div id="plot">
+        {% if plot_url %}
+            <div class="content">
+                <div class="plot">
+                    <img src="data:image/png;base64,{{ plot_url }}" alt="Total Money Over Hands Played" class="img-fluid">
+                </div>
+                <div class="details">
+                    <p>Hands played: {{ play_of_hand_count }}</p>
+                    <p>BlackJacks: {{ blackjackcount }}</p>
+                    <p>Wins: {{ wins }}</p>
+                    <p>Losses: {{ losses }}</p>
+                    <p>Pushes: {{ pushes }}</p>
+                    <p>Win %: {{ winpercentage }}%</p>
+                    <p>Most Money Obtained: {{ max_money }}</p>
+                    <p>Max Winstreak: {{ max_winstreak }}</p>
+                    <p>Max Losstreak: {{ max_losstreak }}</p>
+                    <p>High Score (Hands Played): {{ high_score }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById('strategyForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Form submitted');
+            
+            var formData = new FormData(this);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/', true);
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log('Response received:', xhr.responseText);
+                    document.getElementById('plot').innerHTML = xhr.responseText;
+                } else {
+                    console.error('Error:', xhr.statusText);
+                }
+            };
+            
+            xhr.onerror = function() {
+                console.error('Request failed');
+            };
+            
+            xhr.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    console.log(`Received ${event.loaded} of ${event.total} bytes`);
+                } else {
+                    console.log(`Received ${event.loaded} bytes`);
+                }
+            };
+
+            console.log('Sending AJAX request');
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>
