@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Results</title>
+    
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0a9d2585; 
+        }
+        .content {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        .plot {
+            flex: 1;
+            margin-top: -0.23in; 
+        }
+        .details {
+            flex: 1;
+            margin-left: 20px;
+            font-size: 18px;
+        }
+        .details p {
+            margin: 5px 0;
+        }
+        .score-box {
+            background-color: #06561585;
+            color: #000200f3;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .score-box p {
+            font-size: 19px; 
+        }
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .form-group {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .form-group:last-child {
+            margin-right: 0;
+        }
+        .alert {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body class="container">
+    <h1 class="my-4 text-center">BlackJack Simulation Game</h1>
+    <div class="score-box">
+        <p>Choose a Starting Bet and a Total Amount and Press Submit to automate the BlackJack Game (Max $5000).</p>
+    </div>
+
+    <form id="strategyForm" class="mb-4">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="strategy">Betting Strategy:</label>
+                <select id="strategy" name="strategy" class="form-control" required>
+                    <option value="M">Martingale</option>
+                    <option value="R">Reverse Martingale</option>
+                    <option value="P">Paroli</option>
+                    <option value="F">Flat</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="starting_bet">Starting Bet:</label>
+                <input type="number" id="starting_bet" name="starting_bet" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="total_cash">Total Cash:</label>
+                <input type="number" id="total_cash" name="total_cash" class="form-control" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    <div id="error" class="alert alert-danger" style="display: none;"></div>
+
+    <div id="plot">
+        
+    </div>
+
+    <script>
+        document.getElementById('strategyForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Form submitted');
+
+            var formData = new FormData(this);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/', true);
+
+            xhr.onload
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.error) {
+                        document.getElementById('error').innerText = response.error;
+                        document.getElementById('error').style.display = 'block';
+                    } else {
+                        document.getElementById('error').style.display = 'none';
+                        var content = `
+                            <div class="content">
+                                <div class="plot">
+                                    <img src="data:image/png;base64,${response.plot_url}" alt="Total Money Over Hands Played" class="img-fluid">
+                                </div>
+                                <div class="details">
+                                    <p>Hands played: ${response.play_of_hand_count}</p>
+                                    <p>BlackJacks: ${response.blackjackcount}</p>
+                                    <p>Wins: ${response.wins}</p>
+                                    <p>Losses: ${response.losses}</p>
+                                    <p>Pushes: ${response.pushes}</p>
+                                    <p>Win %: ${response.winpercentage}%</p>
+                                    <p>Most Money Obtained: ${response.max_money}</p>
+                                    <p>Max Winstreak: ${response.max_winstreak}</p>
+                                    <p>Max Losstreak: ${response.max_losstreak}</p>
+                                    <p>High Score (Hands Played): ${response.high_score}</p>
+                                    <p>Predicted Hands Played: ${response.predictionfinal}</p>
+                                </div>
+                            </div>`;
+                        document.getElementById('plot').innerHTML = content;
+                    }
+                } else {
+                    console.error('Error:', xhr.statusText);
+                    document.getElementById('error').innerText = 'An error occurred while processing your request.';
+                    document.getElementById('error').style.display = 'block';
+                }
+            };
+
+            xhr.onerror = function() {
+                console.error('Request failed');
+                document.getElementById('error').innerText = 'An error occurred while processing your request.';
+                document.getElementById('error').style.display = 'block';
+            };
+
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>
