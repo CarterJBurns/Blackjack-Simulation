@@ -1,5 +1,7 @@
 This project is a Blackjack simulation game built with Flask for the web interface, Matplotlib for data visualization, and Python for the simulation logic. Users can select different betting strategies, run simulations, and view their results to try and achieve higher scores. The application securely manages sessions and dynamically generates plots of game outcomes to enhance user engagement. A live CSV maker captures and stores gameplay data in real-time, enabling detailed analysis. Additionally, the application features a machine learning model that predicts the number of hands played based on the selected strategy and game parameters.
 
+*NOTE* Still working on improving effiency and accuracy of the predictive model.
+
 ## Project Structure
 
 - `BlackJack.py`: This file contains the logic for the Blackjack simulation. It includes the game rules, player and dealer actions, and various betting strategies that users can choose from.
