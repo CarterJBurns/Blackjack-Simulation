@@ -1,118 +1,61 @@
+
+from sklearn.metrics import r2_score, mean_squared_error
 import pandas as pd
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestRegressor, StackingRegressor, GradientBoostingRegressor
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, r2_score
-from xgboost import XGBRegressor
-import traceback
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import cross_val_score
 
 def main(strategy, starting_bet, total_cash):
     
-    strategy_mapping = {
-        'M': 0,
-        'P': 1,
-        'R': 2,
-        'F': 3
-    }
-    encoded_strategy = strategy_mapping.get(strategy, 3)
+    df = pd.read_csv("blackjackdata.csv")
 
-    print(f'Arrived: {encoded_strategy} (for strategy {strategy}), Starting Bet: {starting_bet}, Total Cash: {total_cash}')
-    
-    df = pd.read_csv('blackjackdata.csv')
-    df['method_encoded'] = pd.factorize(df['method'])[0]
+    df['bet_perc'] = df['total_money'] / df['bet_amount']
+     
+    X = df[['bet_amount', 'total_money']]
+    y = df['hands_played']
 
-    df_method = df[df['method_encoded'] == encoded_strategy].copy()
-    
-    if df_method.empty:
-        raise ValueError(f"No data found for the strategy '{strategy}' (encoded as {encoded_strategy}).")
 
-    df_method['bet_percentage'] = df_method['bet_amount'] / df_method['total_money']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
 
-    X = df_method[['bet_amount', 'total_money', 'bet_percentage']]
-    y = df_method['hands_played']
+    poly = PolynomialFeatures(degree=2)
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.transform(X_test)
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
-   
-    print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
-    
-    rf = RandomForestRegressor(n_estimators=200, random_state=42)
-    gbm = GradientBoostingRegressor(n_estimators=100, random_state=42, validation_fraction=0.1, n_iter_no_change=10)
-    xgb = XGBRegressor(n_estimators=100, random_state=42)
+    model = RandomForestRegressor(n_estimators=75, random_state=42)
+    model.fit(X_train_poly, y_train)
 
-    stacking_regressor = StackingRegressor(
-        estimators=[('rf', rf), ('gbm', gbm)],
-        final_estimator=xgb
-    )
+    y_pred = model.predict(X_test_poly)
 
-    
-    param_grid = {
-        'rf__n_estimators': [100],  
-        'gbm__learning_rate': [0.1],  
-        'gbm__n_estimators': [100],  
-        'final_estimator__learning_rate': [0.1]  
-    }
+    r2 = r2_score(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
 
-    
-    grid_search = GridSearchCV(estimator=stacking_regressor, param_grid=param_grid, cv=3, scoring='r2', n_jobs=-1, verbose=3)
+    print(f"R-squared: {r2}")
+    print(f"Mean Squared Error: {mse}")
 
-    print("Starting grid search...")
 
-    try:
-        grid_search.fit(X_train, y_train)
-        print("Grid search completed.")
-    except Exception as e:
-        print(f"Error during grid search fitting: {e}")
-        traceback.print_exc()
-        return
+    """
+    plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
+    plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color='red', label='Perfect Fit')
+    plt.xlabel('Actual Hands Played')
+    plt.ylabel('Predicted Hands Played')
+    plt.title('Random Forest Regression Predictions')
+    plt.legend()
+    plt.show()
+    """
 
-    best_model = grid_search.best_estimator_  
-    
-    
-    if not hasattr(best_model, 'estimators_'):
-        print("Best model (StackingRegressor) is still not fitted.")
-        return
 
-    
-    try:
-        y_pred = best_model.predict(X_test)
-        mse = mean_squared_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
-        print(f"Strategy {strategy} (encoded as {encoded_strategy}):")
-        print(f"Mean Squared Error: {mse}")
-        print(f"R-squared: {r2}\n")
-    except Exception as e:
-        print(f"Error during prediction: {e}")
-        traceback.print_exc()
-        return
+    own_input = np.array([[starting_bet,total_cash]])  
+    own_input_poly = poly.transform(own_input)  
+    pred = model.predict(own_input_poly) 
 
-    
-    userdatapredict = pd.DataFrame({
-        'bet_amount': [starting_bet],
-        'total_money': [total_cash],
-        'bet_percentage': [starting_bet / total_cash]
-    })
 
-    
-    userdatapredict_scaled = scaler.transform(userdatapredict)
+    print(f"Predicted hands played for input {own_input[0][0]}: {np.round(pred[0])}")
 
-    
-    print(f"X_train shape: {X_train.shape}, userdatapredict_scaled shape: {userdatapredict_scaled.shape}")
-
-    try:
-        predicted_hands_played = best_model.predict(userdatapredict_scaled)
-        print('here')  
-        predicted_hands_played = float(predicted_hands_played[0])
-    except Exception as e:
-        print(f"Error during prediction: {e}")
-        traceback.print_exc()
-        return
-
-    print(f"Predicted hands played for strategy {strategy}: {predicted_hands_played}")
-    
-    return round(predicted_hands_played, 2)
+    return np.round(pred[0])
 
 if __name__ == "__main__":
-    main()  
+    main()
